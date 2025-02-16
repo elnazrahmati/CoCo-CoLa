@@ -1,0 +1,5 @@
+distributed_type: DEEPSPEED
+same_network: true
+rdzv_backend: c10d
+deepspeed_config:
+  zero3_init_flag: false

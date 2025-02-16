@@ -1,0 +1,11 @@
+{
+    "bf16": {
+        "enabled": true
+    },
+    "zero_optimization": {
+        "stage": 0
+    },
+    "comms_logger": {
+        "enabled": false
+    }
+}

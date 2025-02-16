@@ -1,0 +1,17 @@
+{
+    "train_batch_size": "auto",
+    "train_micro_batch_size_per_gpu": "auto",
+    "gradient_accumulation_steps": "auto",
+    "bf16": {
+        "enabled": true
+    },
+    "gradient_clipping": "auto",
+    "zero_optimization": {
+        "stage": 2,
+        "overlap_comm": true,
+        "reduce_bucket_size": "auto"
+    },
+    "comms_logger": {
+        "enabled": false
+    }
+}
