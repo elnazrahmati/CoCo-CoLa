@@ -1,5 +1,8 @@
 # CoCo-CoLa: Evaluating Language Adherence in Multilingual LLMs  
 Multilingual Large Language Models (LLMs) develop cross-lingual abilities despite being trained with limited parallel data. However, they often struggle to generate responses in the intended language, favoring high-resource languages such as English. In this work, we introduce **CoCo-CoLa** (Correct Concept - Correct Language), a novel metric to evaluate language adherence in multilingual LLMs. Using fine-tuning experiments on a closed-book QA task across seven languages, we analyze how training in one language affects others' performance. Our findings reveal that multilingual models share task knowledge across languages but exhibit biases in output language selection. We identify language-specific layers, showing that final layers play a crucial role in determining output language. Accordingly, we propose a partial training strategy that selectively fine-tunes key layers, improving language adherence while significantly reducing computational cost. Our method achieves comparable or superior performance to full fine-tuning, particularly for low-resource languages, offering a more efficient multilingual adaptation.
+<p align="center">
+  <img src="./images/main_plot.png" height="500" width="400"/>
+</p>   
 
 ## Requirements  
 Install ```Python 3.10.12``` and alll the packages available in ```requirements.txt```.  
@@ -25,7 +28,11 @@ python ./evaluation/model_diff_visualization.py
 Use accurecies and correct-overlap sections of ```notebooks/result_prep.ipynb``` to prepare the rest of the results.  
 
 ## CoCo-CoLa ratio  
-Run ```./script/coca-cola-ratio-run.sh``` and use coca-cola section of ```notebooks/result_prep.ipynb``` to aggregate the results.  
+Run the following code and use the coca-cola section of ```notebooks/result_prep.ipynb``` to aggregate the results.
+```
+cd ./script
+./coca-cola-ratio-run.sh
+```   
 
 ## Partial Training  
 Run the following commands to perform partial SFT for all models and languages, and evaluate the trained models.  
