@@ -1,6 +1,6 @@
 import pandas as pd
 from datasets import Dataset
-from transformers import AutoModelForCausalLM, AutoTokenizer, TrainerCallback, AutoConfig
+from transformers import AutoModelForCausalLM, AutoTokenizer, TrainerCallback, AutoConfig, Gemma3ForConditionalGeneration
 from trl import SFTConfig, SFTTrainer, DataCollatorForCompletionOnlyLM
 import os
 import wandb
@@ -94,13 +94,21 @@ if __name__ == '__main__':
 
         # Load model and tokenizer
         config = AutoConfig.from_pretrained(args.model, attention_probs_dropout_prob=args.dropout)
-        MODEL_CONFIG = {
-            "attn_implementation": "flash_attention_2",
-            "torch_dtype": torch.bfloat16,
-        }
-        model = AutoModelForCausalLM.from_pretrained(args.model, config=config, **MODEL_CONFIG)
+        if "llama" in args.model:
+            MODEL_CONFIG = {
+                "attn_implementation": "flash_attention_2",
+                "torch_dtype": torch.bfloat16,
+            }
+            model = AutoModelForCausalLM.from_pretrained(args.model, config=config, **MODEL_CONFIG)
+            tokenizer = AutoTokenizer.from_pretrained(args.model)
+        elif "gemma" in args.model:
+            MODEL_CONFIG = {
+                "attn_implementation": "eager", #"flash_attention_2",
+                "torch_dtype": torch.bfloat16,
+            }
+            model = Gemma3ForConditionalGeneration.from_pretrained(args.model, config=config, **MODEL_CONFIG)
+            tokenizer = AutoTokenizer.from_pretrained(args.model, add_bos_token=True)
         model.train()
-        tokenizer = AutoTokenizer.from_pretrained(args.model)
         tokenizer.model_max_length = args.max_length
         tokenizer.pad_token = tokenizer.eos_token
 
