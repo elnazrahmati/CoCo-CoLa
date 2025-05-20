@@ -1,6 +1,6 @@
 import pandas as pd
 from datasets import Dataset
-from transformers import AutoModelForCausalLM, AutoTokenizer, TrainerCallback, AutoConfig
+from transformers import AutoModelForCausalLM, AutoTokenizer, TrainerCallback, AutoConfig, Gemma3ForConditionalGeneration
 from trl import SFTConfig, SFTTrainer, DataCollatorForCompletionOnlyLM
 import os
 import wandb
