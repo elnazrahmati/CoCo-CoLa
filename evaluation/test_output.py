@@ -1,4 +1,4 @@
-from transformers import AutoModelForCausalLM, AutoTokenizer
+from transformers import AutoModelForCausalLM, AutoTokenizer, Gemma3ForConditionalGeneration
 from trl import DataCollatorForCompletionOnlyLM
 from datasets import Dataset
 import pandas as pd
@@ -76,6 +76,17 @@ if __name__ == '__main__':
             'german': 500,
             'italian': 500,
         }
+    elif args.model_size == 4:
+        lang_checkpoints = {
+            'english': 400, 
+            'hindi': 300,
+            'portuguese': 400,
+            'spanish': 400,
+            'french': 400,
+            'german': 300,
+            'italian': 400,
+        }
+
 
 
 
@@ -84,11 +95,25 @@ if __name__ == '__main__':
     language = args.language
     
     if args.finetuned:
-        model = AutoModelForCausalLM.from_pretrained(f"../experiments/llama-{args.model_size}b/dropout-0.1-lr-5e-06/{model_language}/checkpoint-{lang_checkpoints[model_language]}").to("cuda")
+        if args.model_size == 4:
+            model = Gemma3ForConditionalGeneration.from_pretrained(f"../experiments/gemma-{args.model_size}b/dropout-0.1-lr-5e-06/{model_language}/checkpoint-{lang_checkpoints[model_language]}").to("cuda")
+        else:
+            model = AutoModelForCausalLM.from_pretrained(f"../experiments/llama-{args.model_size}b/dropout-0.1-lr-5e-06/{model_language}/checkpoint-{lang_checkpoints[model_language]}").to("cuda")
     else:
-        model = AutoModelForCausalLM.from_pretrained(f"meta-llama/Llama-3.1-{args.model_size}B").to("cuda")
+        if args.model_size == 4:
+            model = Gemma3ForConditionalGeneration.from_pretrained(f"google/gemma-3-{args.model_size}b-pt").to("cuda")
+        elif args.model_size == 8:
+            model = AutoModelForCausalLM.from_pretrained(f"meta-llama/Llama-3.1-{args.model_size}B").to("cuda")
+        else:
+            model = AutoModelForCausalLM.from_pretrained(f"meta-llama/Llama-3.2-{args.model_size}B").to("cuda")
+        
 
-    tokenizer = AutoTokenizer.from_pretrained(f"meta-llama/Llama-3.1-{args.model_size}B")
+    if args.model_size == 4:
+        tokenizer = AutoTokenizer.from_pretrained(f"google/gemma-3-{args.model_size}b-pt", add_bos_token=True)
+    elif args.model_size == 8:
+        tokenizer = AutoTokenizer.from_pretrained(f"meta-llama/Llama-3.1-{args.model_size}B")
+    else:
+        tokenizer = AutoTokenizer.from_pretrained(f"meta-llama/Llama-3.2-{args.model_size}B")
     tokenizer.pad_token = tokenizer.eos_token    
 
 

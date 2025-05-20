@@ -102,27 +102,41 @@ if __name__ == '__main__':
         assert len(test_dataset) > 0, "Test dataset is empty"
 
         # Load model and tokenizer
-        config = AutoConfig.from_pretrained(args.checkpoint_dir, attention_probs_dropout_prob=args.dropout)
-        MODEL_CONFIG = {
-            "attn_implementation": "flash_attention_2",
-            "torch_dtype": torch.bfloat16,
-        }
-        model = AutoModelForCausalLM.from_pretrained(args.checkpoint_dir, config=config, **MODEL_CONFIG)
+        config = AutoConfig.from_pretrained(args.model, attention_probs_dropout_prob=args.dropout)
+        if "llama" in args.model:
+            MODEL_CONFIG = {
+                "attn_implementation": "flash_attention_2",
+                "torch_dtype": torch.bfloat16,
+            }
+            model = AutoModelForCausalLM.from_pretrained(args.model, config=config, **MODEL_CONFIG)
+            tokenizer = AutoTokenizer.from_pretrained(args.model)
+        elif "gemma" in args.model:
+            MODEL_CONFIG = {
+                "attn_implementation": "eager", #"flash_attention_2",
+                "torch_dtype": torch.bfloat16,
+            }
+            model = Gemma3ForConditionalGeneration.from_pretrained(args.model, config=config, **MODEL_CONFIG)
+            tokenizer = AutoTokenizer.from_pretrained(args.model, add_bos_token=True)
         model.train()
-        tokenizer = AutoTokenizer.from_pretrained(args.model)
         tokenizer.model_max_length = args.max_length
         tokenizer.pad_token = tokenizer.eos_token
 
         for param in model.base_model.parameters():
             param.requires_grad = False
-            
-        for layer_index in range(args.starting_layer, args.ending_layer):
-            for param, name in zip(model.base_model.layers[layer_index].parameters(), model.base_model.layers[layer_index].state_dict().keys()):
-                if args.unfreeze_module == 'full':
-                    param.requires_grad = True
-                else:
-                    if args.unfreeze_module in name:
+        if "llama" in args.model:    
+            for layer_index in range(args.starting_layer, args.ending_layer):
+                for param, name in zip(model.base_model.layers[layer_index].parameters(), model.base_model.layers[layer_index].state_dict().keys()):
+                    if args.unfreeze_module == 'full':
                         param.requires_grad = True
+                    else:
+                        if args.unfreeze_module in name:
+                            param.requires_grad = True
+
+        elif "gemma" in args.model:
+            layer_indexs = list(range(args.starting_layer, args.ending_layer))
+            for name, param in model.named_parameters():
+                if any([f'layers.{layer}.' in name for layer in layer_indexs]):
+                    param.requires_grad = True
 
 
     partial_state.wait_for_everyone()

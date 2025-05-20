@@ -32,6 +32,8 @@ for gpu_index in "${!gpus[@]}"; do
             NCCL_P2P_DISABLE=1 OMP_NUM_THREADS=8 accelerate launch \
                 --config_file ./accelerate_config/train.yaml \
                 --num_processes 8 \
+                --gpu_ids $gpu \
+                --main_process_port 29502 \
                 --num_machines 1 \
                 --num_cpu_threads_per_process 2 \
                 --deepspeed_config_file ./deepspeed_config/stage1.json \

@@ -1,4 +1,4 @@
-from transformers import AutoModelForCausalLM, AutoTokenizer
+from transformers import AutoModelForCausalLM, AutoTokenizer, Gemma3ForConditionalGeneration
 from trl import DataCollatorForCompletionOnlyLM
 from datasets import Dataset
 import pandas as pd
@@ -113,11 +113,23 @@ if __name__ == '__main__':
             'german': 500,
             'italian': 500,
         }
+    else:
+        lang_checkpoints = {
+            'english': 400, 
+            'hindi': 300,
+            'portuguese': 400,
+            'spanish': 400,
+            'french': 400,
+            'german': 300,
+            'italian': 400,
+        }
 
 
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     if args.model_size == 8:
         tokenizer = AutoTokenizer.from_pretrained("meta-llama/Llama-3.1-8B")
+    elif args.model_size == 4:
+        tokenizer = AutoTokenizer.from_pretrained("google/gemma-3-4b-pt", add_bos_token=True)
     else:
         tokenizer = AutoTokenizer.from_pretrained(f"meta-llama/Llama-3.2-{args.model_size}B")
 
@@ -146,8 +158,13 @@ if __name__ == '__main__':
     val_unswap_dataloader = get_data_loader(df_val_unswap, tokenizer, collator)
     test_unswap_dataloader = get_data_loader(df_test_unswap, tokenizer, collator)
 
-    finetuned_model_path = f"../experiments/llama-{args.model_size}b/dropout-0.1-lr-5e-06/{args.finetuned_language}/checkpoint-{lang_checkpoints[args.finetuned_language]}"
-    finetuned_model = AutoModelForCausalLM.from_pretrained(finetuned_model_path).to(device)
+    
+    if args.model_size == 4:
+        finetuned_model_path = f"../experiments/gemma-{args.model_size}b/dropout-0.1-lr-5e-06/{args.finetuned_language}/checkpoint-{lang_checkpoints[args.finetuned_language]}"
+        finetuned_model = Gemma3ForConditionalGeneration.from_pretrained(finetuned_model_path).to(device)
+    else:
+        finetuned_model_path = f"../experiments/llama-{args.model_size}b/dropout-0.1-lr-5e-06/{args.finetuned_language}/checkpoint-{lang_checkpoints[args.finetuned_language]}"
+        finetuned_model = AutoModelForCausalLM.from_pretrained(finetuned_model_path).to(device)
     finetuned_model.eval()
     
     finetuned_model_accuracy = {
@@ -159,8 +176,14 @@ if __name__ == '__main__':
     
     del finetuned_model
 
-    starting_model_path = f"../experiments/llama-{args.model_size}b/dropout-0.1-lr-5e-06/{args.starting_language}/checkpoint-{lang_checkpoints[args.starting_language]}"
-    starting_model = AutoModelForCausalLM.from_pretrained(starting_model_path).to(device)
+    # starting_model_path = f"../experiments/llama-{args.model_size}b/dropout-0.1-lr-5e-06/{args.starting_language}/checkpoint-{lang_checkpoints[args.starting_language]}"
+    # starting_model = AutoModelForCausalLM.from_pretrained(starting_model_path).to(device)
+    if args.model_size == 4:
+        starting_model_path = f"../experiments/gemma-{args.model_size}b/dropout-0.1-lr-5e-06/{args.starting_language}/checkpoint-{lang_checkpoints[args.starting_language]}"
+        starting_model = Gemma3ForConditionalGeneration.from_pretrained(starting_model_path).to(device)
+    else:
+        starting_model_path = f"../experiments/llama-{args.model_size}b/dropout-0.1-lr-5e-06/{args.starting_language}/checkpoint-{lang_checkpoints[args.starting_language]}"
+        starting_model = AutoModelForCausalLM.from_pretrained(starting_model_path).to(device)
     starting_model.eval()
     
     starting_model_accuracy = {
@@ -173,6 +196,8 @@ if __name__ == '__main__':
     del starting_model
     if args.model_size == 8:
         pretrained_model_path = f"meta-llama/Llama-3.1-8B"
+    elif args.model_size == 4:
+        pretrained_model_path = f"google/gemma-3-4b-pt"
     else:
         pretrained_model_path = f"meta-llama/Llama-3.2-{args.model_size}B"
 

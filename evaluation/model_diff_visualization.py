@@ -1,4 +1,4 @@
-from transformers import AutoModelForCausalLM
+from transformers import AutoModelForCausalLM, Gemma3ForConditionalGeneration
 import pandas as pd
 import torch
 import matplotlib.pyplot as plt
@@ -30,10 +30,15 @@ model_size = 8
 
 for language in lang_checkpoints.keys():
 
-    finetuned_model = AutoModelForCausalLM.from_pretrained(f"../experiments/llama-{model_size}b/dropout-0.1-lr-5e-06/{language}/checkpoint-{300}").to(device)
+    if model_size == 4:
+        finetuned_model = Gemma3ForConditionalGeneration.from_pretrained(f"../experiments/gemma-{model_size}b/dropout-0.1-lr-5e-06/{language}/checkpoint-{lang_checkpoints[language]}").to(device)
+    else:
+        finetuned_model = AutoModelForCausalLM.from_pretrained(f"../experiments/llama-{model_size}b/dropout-0.1-lr-5e-06/{language}/checkpoint-{300}").to(device)
     finetuned_model.eval()
     if model_size == 8:
         pretrained_model = AutoModelForCausalLM.from_pretrained(f"meta-llama/Llama-3.1-{model_size}B").to(device)
+    elif model_size == 4:
+        pretrained_model = Gemma3ForConditionalGeneration.from_pretrained(f"google/gemma-3-{model_size}b-pt").to(device)
     else:
         pretrained_model = AutoModelForCausalLM.from_pretrained(f"meta-llama/Llama-3.2-{model_size}B").to(device)
     pretrained_model.eval()
@@ -50,12 +55,13 @@ for language in lang_checkpoints.keys():
             if layer_num not in param_diffs:
                 if layer_num is not None:
                     param_diffs[layer_num] = {}
-            name_fine = name_fine.replace('_proj', '').replace('.weight', '').replace('model.layers.', '')
+            name_fine = name_fine.replace('_proj', '').replace('.weight', '').replace('model.layers.', '').replace('language_model.', '')
             # remove any digits from the name
             name_fine = '.'.join([i for i in name_fine.split('.') if not i.isdigit()])
             if layer_num is not None:
                 if 'norm' not in name_fine:
-                    param_diffs[layer_num][name_fine] = diff
+                    if 'vision' not in name_fine:
+                        param_diffs[layer_num][name_fine] = diff
 
     # Step 2: Create a DataFrame
     heatmap_entries = []

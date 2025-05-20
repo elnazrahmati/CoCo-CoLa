@@ -73,15 +73,7 @@ def get_data_loader(df, tokenizer, collator):
     dataloader = torch.utils.data.DataLoader(dataset, batch_size=128, collate_fn=collator)
     return dataloader
     
-lang_checkpoints = {
-    'english': 300, 
-    'hindi': 300,
-    'portuguese': 400,
-    'spanish': 700,
-    'french': 500,
-    'german': 800,
-    'italian': 500,
-}
+
 
 
 if __name__ == '__main__':
@@ -96,6 +88,15 @@ if __name__ == '__main__':
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
     if args.model_type == 'llama-1b':
+        lang_checkpoints = {
+            'english': 300, 
+            'hindi': 300,
+            'portuguese': 400,
+            'spanish': 700,
+            'french': 500,
+            'german': 800,
+            'italian': 500,
+        }
 
         partialy_finetuned_model_path = f"../experiments/llama-1b/partial-{0}-{5}-{args.unfreezed_module}/{args.starting_language}-{args.finetuned_language}"
         # partialy_finetuned_model_path = f"../experiments/llama-1b/freezed-0-5/french/checkpoint-200"
@@ -491,3 +492,145 @@ if __name__ == '__main__':
         # plt.savefig(f"../results/llama-1b-partial/loss_based_2/{args.starting_language}-{args.finetuned_language}-{args.unfreezed_module}.png", dpi=300)
         # # save the dataframe
         df.to_csv(f"../results/coca-cola-partial/llama-8b/{args.starting_language}-{args.finetuned_language}-{args.unfreezed_module}.csv", index=False)
+
+
+    if args.model_type == 'gemma-4b':
+
+        lang_checkpoints = {
+            'english': 400, 
+            'hindi': 300,
+            'portuguese': 400,
+            'spanish': 400,
+            'french': 400,
+            'german': 300,
+            'italian': 400,
+        }
+
+        tokenizer = AutoTokenizer.from_pretrained("google/gemma-3-4b-pt", add_bos_token=True)
+        tokenizer.pad_token = tokenizer.eos_token 
+
+
+        # Formatting function
+        def formatting_prompts_func(example):
+            return {"prompt": [f"### Question: {q}\n ### Answer: {a}" for q, a in zip(example['question'], example['answer'])]}
+
+        # Data collator
+        response_template = " ### Answer:"
+        collator = DataCollatorForCompletionOnlyLM(response_template, tokenizer=tokenizer)
+
+
+        _, df_val, df_test = load_data(args.finetuned_language)
+        _, df_val_starting_language, df_test_starting_language = load_data(args.starting_language)
+        
+        df_val_swap = filter_data(df_val, df_val_starting_language, swap=True)
+        df_test_swap = filter_data(df_test, df_test_starting_language, swap=True)
+        df_val_unswap = filter_data(df_val, df_val_starting_language)
+        df_test_unswap = filter_data(df_test, df_test_starting_language)
+
+        val_swap_dataloader = get_data_loader(df_val_swap, tokenizer, collator)
+        test_swap_dataloader = get_data_loader(df_val_swap, tokenizer, collator)
+        test_swap_dataloader = get_data_loader(df_test_swap, tokenizer, collator)
+        test_unswap_dataloader = get_data_loader(df_test_unswap, tokenizer, collator)
+
+
+
+        partialy_finetuned_model_path = f"experiments/gemma-4b/partial-{0}-{8}-{args.unfreezed_module}/{args.starting_language}-{args.finetuned_language}"
+        partialy_finetuned_model_path = os.path.join(partialy_finetuned_model_path, os.listdir(partialy_finetuned_model_path)[0])
+        partialy_finetuned_model_0_8 = AutoModelForCausalLM.from_pretrained(partialy_finetuned_model_path).to(device)
+        partialy_finetuned_model_0_8.eval()
+
+        partialy_finetuned_model_0_8_accuracy = {
+            f"test_{args.finetuned_language}": calculate_accuracy(partialy_finetuned_model_0_8, tokenizer, test_unswap_dataloader, device),
+            f"test_{args.starting_language}": calculate_accuracy(partialy_finetuned_model_0_8, tokenizer, test_swap_dataloader, device)
+        }
+
+        del partialy_finetuned_model_0_8
+
+        
+        partialy_finetuned_model_path = f"experiments/gemma-4b/partial-{0}-{21}-{args.unfreezed_module}/{args.starting_language}-{args.finetuned_language}"
+        partialy_finetuned_model_path = os.path.join(partialy_finetuned_model_path, os.listdir(partialy_finetuned_model_path)[0])
+        partialy_finetuned_model_0_21 = AutoModelForCausalLM.from_pretrained(partialy_finetuned_model_path).to(device)
+        partialy_finetuned_model_0_21.eval()
+
+        partialy_finetuned_model_0_21_accuracy = {
+            f"test_{args.finetuned_language}": calculate_accuracy(partialy_finetuned_model_0_21, tokenizer, test_unswap_dataloader, device),
+            f"test_{args.starting_language}": calculate_accuracy(partialy_finetuned_model_0_21, tokenizer, test_swap_dataloader, device)
+        }
+
+        del partialy_finetuned_model_0_21
+
+
+        partialy_finetuned_model_path = f"experiments/gemma-4b/partial-{21}-{34}-{args.unfreezed_module}/{args.starting_language}-{args.finetuned_language}"
+        partialy_finetuned_model_path = os.path.join(partialy_finetuned_model_path, os.listdir(partialy_finetuned_model_path)[0])
+        partialy_finetuned_model_21_34 = AutoModelForCausalLM.from_pretrained(partialy_finetuned_model_path).to(device)
+        partialy_finetuned_model_21_34.eval()
+
+        partialy_finetuned_model_21_34_accuracy = {
+            f"test_{args.finetuned_language}": calculate_accuracy(partialy_finetuned_model_21_34, tokenizer, test_unswap_dataloader, device),
+            f"test_{args.starting_language}": calculate_accuracy(partialy_finetuned_model_21_34, tokenizer, test_swap_dataloader, device)
+        }
+
+        del partialy_finetuned_model_21_34
+
+        partialy_finetuned_model_path = f"experiments/gemma-4b/partial-{28}-{34}-{args.unfreezed_module}/{args.starting_language}-{args.finetuned_language}"
+        partialy_finetuned_model_path = os.path.join(partialy_finetuned_model_path, os.listdir(partialy_finetuned_model_path)[0])
+        partialy_finetuned_model_28_34 = AutoModelForCausalLM.from_pretrained(partialy_finetuned_model_path).to(device)
+        partialy_finetuned_model_28_34.eval()
+
+        partialy_finetuned_model_28_34_accuracy = {
+            f"test_{args.finetuned_language}": calculate_accuracy(partialy_finetuned_model_28_34, tokenizer, test_unswap_dataloader, device),
+            f"test_{args.starting_language}": calculate_accuracy(partialy_finetuned_model_28_34, tokenizer, test_swap_dataloader, device)
+        }
+
+        del partialy_finetuned_model_28_34
+
+
+        finetuned_model_path = f'experiments/gemma-4b/dropout-0.1-lr-5e-06/{args.finetuned_language}/checkpoint-{lang_checkpoints[args.finetuned_language]}'
+        finetuned_model = AutoModelForCausalLM.from_pretrained(finetuned_model_path).to(device)
+        finetuned_model.eval()
+
+        finetuned_model_accuracy = {
+            f"test_{args.finetuned_language}": calculate_accuracy(finetuned_model, tokenizer, test_unswap_dataloader, device),
+            f"test_{args.starting_language}": calculate_accuracy(finetuned_model, tokenizer, test_swap_dataloader, device)
+        }
+
+        del finetuned_model
+
+        pretrained_model_path = f'experiments/gemma-4b/dropout-0.1-lr-5e-06/{args.starting_language}/checkpoint-{lang_checkpoints[args.starting_language]}'
+        pretrained_model = AutoModelForCausalLM.from_pretrained(pretrained_model_path).to(device)
+        pretrained_model.eval()
+
+        pretrained_model_accuracy = {
+            f"test_{args.finetuned_language}": calculate_accuracy(pretrained_model, tokenizer, test_unswap_dataloader, device),
+            f"test_{args.starting_language}": calculate_accuracy(pretrained_model, tokenizer, test_swap_dataloader, device)
+        }
+        
+        
+
+        df = pd.DataFrame([pretrained_model_accuracy, partialy_finetuned_model_0_8_accuracy, partialy_finetuned_model_0_21_accuracy, partialy_finetuned_model_21_34_accuracy, partialy_finetuned_model_28_34_accuracy, finetuned_model_accuracy])
+        df['model'] = [f'fully-{args.starting_language}-trained', f'partialy_{args.finetuned_language}-tuned_0_8', f'partialy_{args.finetuned_language}-tuned_0_21', f'partialy_{args.finetuned_language}-tuned_21_34', f'partialy_{args.finetuned_language}-tuned_28_34', f'fully-{args.finetuned_language}-trained']
+        df = df.melt(id_vars='model', var_name='split', value_name='accuracy')
+
+        vals = {}
+        val_keys = [f'fully-{args.starting_language}-trained', f'partialy_{args.finetuned_language}-tuned_0_8', f'partialy_{args.finetuned_language}-tuned_0_21', f'partialy_{args.finetuned_language}-tuned_21_34', f'partialy_{args.finetuned_language}-tuned_28_34', f'fully-{args.finetuned_language}-trained']
+
+        for key in val_keys:
+            vals[key] = {}
+            vals[key]['accuracy'] = df[(df['model'] == key) & (df['split'] != 'test_english')]['accuracy'].values[0] + df[(df['model'] == key) & (df['split'] == 'test_english')]['accuracy'].values[0]
+            vals[key]['ratio'] = df[(df['model'] == key) & (df['split'] != 'test_english')]['accuracy'].values[0] 
+
+        fig, ax = plt.subplots()
+        fig.set_size_inches(10, 6)
+        accuracy_bars = ax.bar(vals.keys(), [vals[key]['accuracy'] for key in vals.keys()], color='aliceblue', edgecolor='xkcd:denim blue', label='Cum. Acc.', hatch='//', alpha=0.5)
+
+        # Create ratio bars
+        ratio_bars = ax.bar(vals.keys(), [vals[key]['ratio'] for key in vals.keys()], color='xkcd:denim blue', label=f'{args.finetuned_language} Acc.', alpha=0.9)
+
+        # Rotate bar labels
+        ax.set_xticklabels(vals.keys(), rotation=45, ha='right')
+        plt.title(f"{args.finetuned_language} - Gemma-4B")
+
+        plt.legend()
+        plt.savefig(f"results/coca-coal-partial/gemma-4b/{args.starting_language}-{args.finetuned_language}-{args.unfreezed_module}.png", dpi=300, bbox_inches='tight')
+
+        df.to_csv(f"results/coca-coal-partial/gemma-4b/{args.starting_language}-{args.finetuned_language}-{args.unfreezed_module}.csv", index=False)
