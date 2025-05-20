@@ -2,7 +2,7 @@ cd ..
 training_languages=("german" "french" "italian" "portuguese" "spanish" "hindi")
 seeds=(42)
 gpus=(0 3 4 5 6 7)
-model_sizes=(1 3 8)
+model_sizes=(1 3 8 4)
 
 num_gpus=${#gpus[@]}
 

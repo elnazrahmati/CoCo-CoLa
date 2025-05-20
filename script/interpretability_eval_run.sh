@@ -34,6 +34,12 @@ for gpu_index in "${!gpus[@]}"; do
                 --unfreezed_module full ; "
         concatenated_cmd+="$cmd"
 
+        cmd="CUDA_VISIBLE_DEVICES=$gpu python lang_interpretability_eval.py \
+                --finetuned_language $dataset \
+                --model_type gemma-4b \
+                --unfreezed_module full ; "
+        concatenated_cmd+="$cmd"
+
         ((dataset_index = dataset_index + num_gpus))
     done 
     echo "Running model with gpu: $gpu, dataset: $dataset, session_name: $SESSION_NAME"
